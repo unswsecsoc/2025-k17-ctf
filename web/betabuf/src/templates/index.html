@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Buffer Jump</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Patrick Hand', cursive;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+        }
+        .text-shadow {
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="bg-blue-100 flex flex-col items-center justify-center min-h-screen m-0 overflow-hidden">
+
+    <div id="game-container" class="relative w-full max-w-sm aspect-[2/3] bg-black rounded-xl shadow-2xl overflow-hidden border-4 border-gray-800">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="startScreen" class="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center text-center p-4">
+            <h1 class="text-6xl font-bold text-white text-shadow">Buffer Jump</h1>
+            <p class="text-white mt-4 text-lg text-shadow">Climb your way up the data pipeline!</p>
+            <p class="text-white mt-2 text-md text-shadow">Use Arrow Keys to move.</p>
+            <button id="startButton" class="mt-8 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full text-2xl shadow-lg transition-transform transform hover:scale-105">
+                Start Game
+            </button>
+        </div>
+
+        <div id="gameOverScreen" class="absolute inset-0 bg-black bg-opacity-50 flex-col items-center justify-center text-center p-4 hidden">
+            <h2 class="text-5xl font-bold text-red-500 text-shadow">Game Over</h2>
+            <p class="text-white mt-4 text-2xl text-shadow">Your Score: <span id="finalScore">0</span></p>
+            <button id="restartButton" class="mt-8 mb-5 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full text-2xl shadow-lg transition-transform transform hover:scale-105">
+                Play Again
+            </button>
+            <br>
+            <a href="/account" id="accountButton" class="btn mt-8 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full text-2xl shadow-lg transition-transform transform hover:scale-105">
+                Go To Account
+            </a>
+        </div>
+
+        <div id="gameUI" class="absolute top-0 left-0 p-4 text-3xl font-bold text-white text-shadow hidden">
+            Score: <span id="score">0</span>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const gameUI = document.getElementById('gameUI');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const scoreEl = document.getElementById('score');
+        const finalScoreEl = document.getElementById('finalScore');
+
+        let boardWidth = 400;
+        let boardHeight = 600;
+
+        let playerWidth = 60;
+        let playerHeight = 60;
+        let playerX = boardWidth / 2 - playerWidth / 2;
+        let playerY = boardHeight * 7 / 8 - playerHeight;
+        let player = {
+            img: null,
+            x: playerX,
+            y: playerY,
+            width: playerWidth,
+            height: playerHeight
+        }
+
+        let velocityX = 0;
+        let velocityY = 0;
+        let initialVelocityY = -7;
+        let gravity = 0.13;
+        let hasCollided = false;
+
+        let platformArray = [];
+        let platformWidth = 80;
+        let platformHeight = 25;
+
+        let score = 0;
+        let gameOver = false;
+        let gameStarted = false;
+
+        function resizeCanvas() {
+            const container = document.getElementById('game-container');
+            const aspectRatio = boardWidth / boardHeight;
+            const newWidth = container.clientWidth;
+            const newHeight = newWidth / aspectRatio;
+            
+            canvas.width = boardWidth;
+            canvas.height = boardHeight;
+            canvas.style.width = `${newWidth}px`;
+            canvas.style.height = `${newHeight}px`;
+        }
+
+        function createDoodlerSVG(color = '#ff8c00') {
+            const svg = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${playerWidth}" height="${playerHeight}">
+                    <!-- Body -->
+                    <path d="M25,95 C10,80 10,50 25,35 S75,20 75,35 S90,80 75,95 Z" fill="${color}" stroke="#000" stroke-width="2"/>
+                    <!-- Eyes -->
+                    <circle cx="40" cy="55" r="8" fill="white" stroke="#000" stroke-width="2"/>
+                    <circle cx="60" cy="55" r="8" fill="white" stroke="#000" stroke-width="2"/>
+                    <circle cx="42" cy="57" r="3" fill="black"/>
+                    <circle cx="58" cy="57" r="3" fill="black"/>
+                    <!-- Nose/Snout -->
+                    <path d="M45,70 Q50,80 55,70" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round"/>
+                </svg>`;
+            return `data:image/svg+xml;base64,${btoa(svg)}`;
+        }
+
+        function createPlatformSVG(color = '#4CAF50') {
+             const svg = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${platformWidth} ${platformHeight}" width="${platformWidth}" height="${platformHeight}">
+                    <rect width="${platformWidth}" height="${platformHeight}" rx="5" ry="5" fill="${color}" stroke="#388E3C" stroke-width="2"/>
+                    <line x1="5" y1="5" x2="${platformWidth - 5}" y2="5" stroke="#81C784" stroke-width="2"/>
+                    <line x1="10" y1="10" x2="${platformWidth - 10}" y2="10" stroke="#66BB6A" stroke-width="2"/>
+                </svg>`;
+            return `data:image/svg+xml;base64,${btoa(svg)}`;
+        }
+
+        // Load images
+        let playerImg = new Image();
+        playerImg.src = createDoodlerSVG();
+
+        let platformImg = new Image();
+        platformImg.src = createPlatformSVG();
+        
+
+        function initGame() {
+            gameOver = false;
+            score = 0;
+            velocityX = 0;
+            velocityY = 0;
+            
+            player.x = playerX;
+            player.y = playerY;
+
+            platformArray = [];
+
+            let platform = {
+                img: platformImg,
+                x: boardWidth / 2 - platformWidth / 2,
+                y: boardHeight - 50,
+                width: platformWidth,
+                height: platformHeight,
+                isBroken: false
+            };
+            platformArray.push(platform);
+
+            for (let i = 0; i < 3; i++) {
+                let randomX = Math.floor(Math.random() * boardWidth * 3 / 4);
+                let newPlatform = {
+                    img: platformImg,
+                    x: randomX,
+                    y: boardHeight - 150 * i - 150,
+                    width: platformWidth,
+                    height: platformHeight,
+                    isBroken: false
+                };
+                platformArray.push(newPlatform);
+            }
+            
+            gameUI.classList.remove('hidden');
+            gameOverScreen.classList.add('hidden');
+            requestAnimationFrame(update);
+        }
+
+        const binaryChars = '01';
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+
+        const drops = [];
+        for (let x = 0; x < columns; x++) {
+            drops[x] = Math.random() * canvas.height;
+        }
+        let ith_update = 0;
+
+        function drawBg() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0F0';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = binaryChars.charAt(Math.floor(Math.random() * binaryChars.length));
+                
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (ith_update % 3 == 0) {
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+    
+                    drops[i]++;
+                }
+            }
+
+            ith_update++;
+        }
+
+        function update() {
+            if (gameOver) return;
+
+            requestAnimationFrame(update);
+            ctx.clearRect(0, 0, boardWidth, boardHeight);
+
+            drawBg();
+
+            player.x += velocityX;
+            if (player.x > boardWidth) {
+                player.x = -playerWidth;
+            } else if (player.x + playerWidth < 0) {
+                player.x = boardWidth;
+            }
+
+            for (let i = 0; i < platformArray.length; i++) {
+                let platform = platformArray[i];
+                if (velocityY < 0 && player.y < boardHeight * 0.5) {
+                    if (player.y < boardHeight * 0.8) {
+                        const fac = player.y / boardHeight;
+                        platform.y -= initialVelocityY * 2 * (1 - fac);
+                        velocityY *= 0.95 + 0.05 * Math.min(1, fac);
+                    }
+                }
+                
+                if (detectCollision(player, platform)) {
+                    hasCollided = true;
+                    if (velocityY >= 0) {
+                        velocityY = -8;
+                    } else if (!hasCollided) {
+                        velocityY *= 0.4;
+                    }
+                } else {
+                    hasCollided = false;
+                }
+                ctx.drawImage(platform.img, platform.x, platform.y, platform.width, platform.height);
+            }
+
+            velocityY += gravity;
+            player.y += velocityY;
+
+            if (player.y > boardHeight) {
+                gameOver = true;
+            }
+
+            ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+
+            while (platformArray.length > 0 && platformArray[0].y >= boardHeight) {
+                score += 50;
+                platformArray.shift();
+                newPlatform();
+            }
+
+            scoreEl.innerText = score;
+
+            if (gameOver) {
+                finalScoreEl.innerText = score;
+                gameOverScreen.classList.remove('hidden');
+                gameUI.classList.add('hidden');
+
+                localStorage.setItem('high_score', Math.max(score, localStorage.getItem('high_score') || 0));
+            }
+        }
+        
+        function movePlayer(e) {
+            if (e.code == "ArrowRight" || e.code == "KeyD") {
+                velocityX = 4;
+            } else if (e.code == "ArrowLeft" || e.code == "KeyA") {
+                velocityX = -4;
+            }
+        }
+
+        function stopPlayer(e) {
+            if (e.code == "ArrowRight" || e.code == "KeyD" || e.code == "ArrowLeft" || e.code == "KeyA") {
+                velocityX = 0;
+            }
+        }
+
+        function detectCollision(a, b) {
+            return a.x < b.x + b.width &&
+                   a.x + a.width > b.x &&
+                   a.y < b.y + b.height &&
+                   a.y + a.height > b.y;
+        }
+
+        function newPlatform() {
+            let randomX = Math.floor(Math.random() * boardWidth * 3 / 4); 
+            let platform = {
+                img: platformImg,
+                x: randomX,
+                y: -platformHeight,
+                width: platformWidth,
+                height: platformHeight,
+                isBroken: false
+            }
+            platformArray.push(platform);
+        }
+
+        startButton.addEventListener('click', () => {
+            startScreen.style.display = 'none';
+            gameStarted = true;
+            initGame();
+        });
+
+        restartButton.addEventListener('click', () => {
+            gameOverScreen.classList.add('hidden');
+            initGame();
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+        document.addEventListener("keydown", movePlayer);
+        document.addEventListener("keyup", stopPlayer);
+
+        resizeCanvas();
+    </script>
+</body>
+</html>

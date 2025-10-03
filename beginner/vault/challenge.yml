@@ -1,0 +1,47 @@
+# Required sections, should be self-explanatory.
+name: vault
+author: memorinya
+category: web
+description: "We've employed state-of-the-art brute-force prevention, hopefully there won't be any side-effects."
+value: 500
+type: dynamic
+
+# Specifies flag(s) for this challenge.
+# You must provide at least one.
+flags:
+    - K17{aLL_iN_go0d_t1m3}
+
+# Specifies hints that are used to give players a way to buy or have suggestions.
+# They are not required but are encouraged to keep players engaged.
+# hints:
+#     - This hint is free
+#     - content: This hint costs points
+#       cost: 10
+
+# Specifies files that will be accessible for this challenge during a CTF.
+# Paths are relative to the directory this file is in.
+# files:
+# - phished.pcapng
+
+# Specifies the maximum number of attempts a participant can submit attempts.
+# attempts: 5
+
+# Provides instructions on how to connect to a challenge.
+# If your challenge requires hosting, leave this be so the Projects team can play around with it.
+connection_info: https://vault-web.k17.kctf.cloud
+
+# Specifies additional metadata for custom challenge types.
+# The section below is a commented example of the metadata for a dynamically scored challenge.
+# If you wish to make your challenge dynamic, set the type to `dynamic` and uncomment below.
+extra:
+    initial: 500
+    decay: 100 # Note: no effect
+    minimum: 50
+
+# Requirements are used to make a challenge require another challenge to be solved before being available.
+# requirements:
+#     - netcat
+
+# Specifies what version of the challenge specification was used.
+# Subject to change until ctfcli v1.0.0
+version: "0.1"

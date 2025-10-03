@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package game.data;
+
+message AccountDetails {
+    string username = 1;
+    string country = 2;
+}
+
+message RegistrationInvite {
+    uint64 invite_id = 3;
+    string invited_by = 4;
+    string invitation_message = 5;
+    int64 created_at = 6;
+    int64 expires_at = 7;
+}
+
+message Registration {
+    string username = 1;
+    string country = 2;
+    uint64 invite_id = 3;
+    string invited_by = 4;
+    string invitation_message = 5;
+    int64 invitation_created_at = 6;
+    int64 invitation_expires_at = 7;
+    bool is_verified = 8;
+}
+
+message AccountToken {
+    string user_id = 1;
+    string username = 2;
+    bool is_admin = 3;
+    bool is_verified = 4;
+}
+
+message SecureConnectionDetails {
+    bool is_local_ip = 1;
+    string id = 2;
+}
+
+message HighScore {    
+    int32 score = 1;
+    string user_id = 2;
+    int64 timestamp = 3;
+}

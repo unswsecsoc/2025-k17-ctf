@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Password Check</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 400px;
+            margin: 2rem auto;
+            text-align: center;
+        }
+        input, button {
+            padding: 0.5rem;
+            margin: 0.5rem;
+            font-size: 1rem;
+        }
+        p {
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <h2>Password Checker</h2>
+    <form method="GET">
+        <input type="text" name="password" placeholder="Enter password" required/>
+        <button type="submit">Check</button>
+    </form>
+
+    {% if result is not none %}
+        <p>{{ result }}</p>
+        <p>Response time: {{ elapsed_ms }} ms</p>
+    {% endif %}
+</body>
+</html>

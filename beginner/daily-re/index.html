@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legally Distinct Daily Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tile {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #d3d6da;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: transform 0.2s ease-in-out, background-color 0.5s ease, border-color 0.5s ease;
+        }
+        .tile.correct {
+            background-color: #6aaa64;
+            border-color: #6aaa64;
+            color: white;
+        }
+        .tile.present {
+            background-color: #c9b458;
+            border-color: #c9b458;
+            color: white;
+        }
+        .tile.absent {
+            background-color: #787c7e;
+            border-color: #787c7e;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen font-sans p-4">
+
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 tracking-wider">Legally Distinct Daily Game</h1>
+        <p id="day-num" class="text-gray-500"></p>
+    </div>
+
+    <div id="game-grid" class="grid grid-rows-6 gap-1.5 mb-8">
+    </div>
+
+    <div class="flex items-center space-x-2">
+        <input type="text" id="guess-input" maxlength="5" class="w-64 px-4 py-2 border-2 border-gray-300 rounded-lg text-lg uppercase tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Enter guess">
+        <button id="guess-button" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
+            Guess
+        </button>
+    </div>
+
+    <p id="message-area" class="mt-4 text-lg font-medium text-gray-700 h-6"></p>
+
+    <script>
+        const DAY_NUMBER = 17;
+        const DAY_KEY = "70e7726a9b8d5e65a6dbb19cf784ad5a";
+
+        const runGame = (TARGET_WORD) => {
+            const WORD_LENGTH = 5;
+            const MAX_GUESSES = 6;
+
+            const grid = document.getElementById('game-grid');
+            const guessInput = document.getElementById('guess-input');
+            const guessButton = document.getElementById('guess-button');
+            const messageArea = document.getElementById('message-area');
+            const dayNumText = document.getElementById('day-num');
+
+            dayNumText.textContent = `Day #${DAY_NUMBER}`;
+
+            let currentRow = 0;
+            let currentGuess = '';
+            let isGameOver = false;
+
+            function initializeGrid() {
+                for (let i = 0; i < MAX_GUESSES; i++) {
+                    const row = document.createElement('div');
+                    row.className = 'grid grid-cols-5 gap-1.5';
+                    for (let j = 0; j < WORD_LENGTH; j++) {
+                        const tile = document.createElement('div');
+                        tile.className = 'tile';
+                        tile.id = `tile-${i}-${j}`;
+                        row.appendChild(tile);
+                    }
+                    grid.appendChild(row);
+                }
+            }
+
+            guessButton.addEventListener('click', handleGuess);
+            guessInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    handleGuess();
+                }
+                guessInput.value = guessInput.value.replace(/[^a-zA-Z]/g, '').toUpperCase();
+            });
+
+            function handleGuess() {
+                if (isGameOver) return;
+
+                const guess = guessInput.value.toUpperCase();
+
+                if (guess.length !== WORD_LENGTH) {
+                    showMessage("Your guess must be 5 letters long.");
+                    return;
+                }
+
+                processGuess(guess);
+
+                if (guess === TARGET_WORD) {
+                    showMessage("Correct!");
+                    isGameOver = true;
+                } else if (currentRow >= MAX_GUESSES) {
+                    showMessage(`Game over! The word was ${TARGET_WORD}.`);
+                    isGameOver = true;
+                }
+                
+                if(isGameOver) {
+                    guessInput.disabled = true;
+                    guessButton.disabled = true;
+                }
+            }
+
+            function processGuess(guess) {
+                const targetLetters = TARGET_WORD.split('');
+                const guessLetters = guess.split('');
+                
+                for (let i = 0; i < WORD_LENGTH; i++) {
+                    const tile = document.getElementById(`tile-${currentRow}-${i}`);
+                    tile.textContent = guessLetters[i];
+                    if (guessLetters[i] === targetLetters[i]) {
+                        tile.classList.add('correct');
+                        targetLetters[i] = null;
+                    }
+                }
+
+                for (let i = 0; i < WORD_LENGTH; i++) {
+                     const tile = document.getElementById(`tile-${currentRow}-${i}`);
+                     if (tile.classList.contains('correct')) continue;
+
+                     if(targetLetters.includes(guessLetters[i])){
+                         tile.classList.add('present');
+                         targetLetters[targetLetters.indexOf(guessLetters[i])] = null;
+                     } else {
+                         tile.classList.add('absent');
+                     }
+                }
+
+                currentRow++;
+                guessInput.value = '';
+            }
+
+            function showMessage(message) {
+                messageArea.textContent = message;
+            }
+
+            initializeGrid();
+        }
+
+        var Module = {
+            onRuntimeInitialized: function() {
+                let extracted_word = Module.ccall(
+                    'get_word',
+                    'string',
+                    ['number', 'string'],
+                    [DAY_NUMBER - 1, DAY_KEY]
+                )
+                if (!extracted_word) {
+                    console.error("Failed to get word!");
+                }
+                
+                extracted_word = extracted_word.toUpperCase();
+
+                if (document.readyState === "loading") {
+                    document.addEventListener('DOMContentLoaded', () => { runGame(extracted_word) });
+                } else {
+                    runGame(extracted_word);
+                }
+            }
+        };
+    </script>
+    <script src="words.js"></script>
+</body>
+</html>

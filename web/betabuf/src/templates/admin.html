@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head><body>
+    <div class="container">
+        <h1>Buffer Jump Admin Panel (Beta)</h1>
+
+        <div class="card">
+            <h2>Account Details</h2>
+            <div id="status-display">
+                <p><strong>User ID:</strong> <code id="status-user-id">N/A</code></p>
+                <p><strong>Username:</strong> <code id="status-username">N/A</code></p>
+                <p><strong>Admin Status:</strong> <code id="status-is-admin">N/A</code></p>
+                <p><strong>Verified Status:</strong> <code id="status-is-verified">N/A</code></p>
+                <hr>
+                <p><strong>Secure Connection:</strong> <code id="status-secure-connection">Not established</code></p>
+            </div>
+            <button id="clear-storage">Log Out</button>
+        </div>
+
+        <div class="card">
+            <h2>3. Admin Panel</h2>
+            <div class="sub-card">
+                <h3>Verify Connection</h3>
+                <button id="verify-conn-btn">Verify Admin Connection</button>
+            </div>
+
+            <div class="sub-card">
+                <h3>Get Flag</h3>
+                <button id="get-flag-btn">Get Admin Flag</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Debug Output</h2>
+            <pre id="output">Responses will appear here...</pre>
+        </div>
+
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.3.2/dist/protobuf.min.js"></script>
+    <script src="/static/admin.js"></script>
+</body>
+</html>
